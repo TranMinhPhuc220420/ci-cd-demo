@@ -31,7 +31,7 @@ jobs:
       - name: 2. Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
 
       - name: 3. Install dependencies
@@ -72,15 +72,33 @@ jobs:
           name: dist
           path: dist
 
-      - name: 2. Deploy to cPanel via FTP
+      - name: 2. Kiểm tra FTP secrets
+        run: |
+          missing=0
+          for key in FTP_SERVER FTP_USERNAME FTP_PASSWORD FTP_SERVER_DIR; do
+            if [ -z "${!key}" ]; then
+              echo "::error::Secret chưa được cấu hình: $key"
+              missing=1
+            fi
+          done
+          if [ "$missing" -eq 1 ]; then
+            echo ""
+            echo "Vào Settings → Secrets and variables → Actions để thêm các secret trên."
+            exit 1
+          fi
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
+
+      - name: 3. Deploy to cPanel via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          # Thư mục nguồn (đã build) trên runner — nhớ dấu "/" ở cuối
-          local-dir: ./test.plt.pro.vn
-          # Thư mục đích trên hosting cPanel, ví dụ: /public_html/ hoặc /public_html/ten-app/
-          server-dir: /test.plt.pro.vn
-          # protocol: ftps  # bỏ comment nếu host yêu cầu FTPS (khuyến nghị nếu hỗ trợ)
-          # port: 21        # đổi nếu host dùng cổng khác
+          local-dir: ./dist/
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          protocol: ftps
+          port: 21
