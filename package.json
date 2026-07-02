@@ -1,7 +1,7 @@
 {
   "name": "ci-cd-demo",
   "version": "1.0.0",
-  "description": "Project demo CI/CD với GitHub Actions cho thực tập sinh",
+  "description": "CI/CD demo project with GitHub Actions for interns",
   "private": true,
   "scripts": {
     "lint": "eslint \"*.js\"",

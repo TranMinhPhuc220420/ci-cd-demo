@@ -1,95 +1,98 @@
 # CI/CD Demo — Task Manager (HTML/CSS/JS)
 
-Project mẫu để hiểu **luồng CI/CD cơ bản** bằng GitHub Actions.
-App thật ra rất đơn giản (to-do list), trọng tâm là **pipeline**, không phải app.
+A sample project to understand the **basic CI/CD flow** with GitHub Actions.
+The app itself is intentionally simple (a to-do list); the focus is the **pipeline**, not the app.
 
-## 1. Project này làm gì?
+## 1. What does this project do?
 
-Một Task Manager web đơn giản: thêm / tick hoàn thành / xoá công việc,
-lưu vào `localStorage`. Không cần backend.
+A simple Task Manager web app: add / mark as done / delete tasks,
+stored in `localStorage`. No backend required.
 
 ```
-index.html    -> giao diện
-style.css     -> giao diện
-utils.js      -> các hàm thuần (pure function), dễ test
-script.js     -> xử lý DOM, gọi các hàm trong utils.js
-utils.test.js -> unit test cho utils.js (Jest)
-build.js      -> bước "build" ra thư mục dist/
-.eslintrc.json-> cấu hình kiểm tra code style
+index.html    -> UI
+style.css     -> UI
+utils.js      -> pure functions, easy to test
+script.js     -> DOM handling, calls functions in utils.js
+utils.test.js -> unit tests for utils.js (Jest)
+build.js      -> the "build" step producing the dist/ directory
+.eslintrc.json-> code style check configuration
 ```
 
-> 💡 Vì sao tách `utils.js` riêng? Hàm xử lý DOM (`script.js`) rất khó test.
-> Hàm thuần (không đụng DOM) như `calculateStats()`, `createTask()` thì test dễ
-> và nhanh. Đây là thói quen nên áp dụng vào project thật.
+> 💡 Why split out `utils.js`? DOM handling code (`script.js`) is hard to test.
+> Pure functions (that don't touch the DOM) like `calculateStats()` and `createTask()`
+> are easy and fast to test. This is a good habit to apply in real projects.
 
-## 2. Chạy thử ở máy local
+## 2. Run it locally
 
 ```bash
-npm install       # cài dependencies
-npm run lint      # kiểm tra code style
-npm test          # chạy unit test
-npm run build     # build ra thư mục dist/
+npm install       # install dependencies
+npm run lint      # check code style
+npm test          # run unit tests
+npm run build     # build into the dist/ directory
 ```
 
-Mở `index.html` trực tiếp bằng trình duyệt để xem app chạy.
+Open `index.html` directly in a browser to see the app run.
 
-## 3. Pipeline CI/CD (`.github/workflows/ci-cd.yml`)
+## 3. CI/CD pipeline (`.github/workflows/deploy.yml`)
 
-Đây là phần chính. Pipeline có **2 job**:
+This is the main part. The pipeline has **2 jobs**:
 
-### Job `ci` — chạy với MỌI push và Pull Request
+### Job `ci` — runs on every push and Pull Request
 
-| Bước | Việc làm | Tại sao cần |
+| Step | What it does | Why it's needed |
 |---|---|---|
-| 1. Checkout code | Tải code từ repo vào máy chạy (runner) | Runner là máy trống, phải có code mới làm được gì |
-| 2. Setup Node.js | Cài Node.js version cố định (20) | Đảm bảo mọi lần chạy dùng đúng 1 version, tránh lỗi "chạy máy tôi thì được" |
-| 3. Install dependencies | `npm ci` (không phải `npm install`) | `npm ci` cài đúng version ghi trong `package-lock.json` → **reproducible build** |
-| 4. Lint | `npm run lint` | Bắt lỗi cú pháp / style sớm, trước khi merge |
-| 5. Test | `npm test` | Đảm bảo code không phá vỡ chức năng đã có |
-| 6. Build | `npm run build` | Tạo ra bản build thực sự sẽ deploy (thư mục `dist/`) |
-| 7. Upload artifact | Lưu `dist/` lại | Để job `deploy` dùng lại **chính xác** bản đã build & test, không build lại lần 2 |
+| 1. Checkout code | Fetch the code from the repo onto the runner | The runner is an empty machine; it needs the code to do anything |
+| 2. Setup Node.js | Install a fixed Node.js version | Ensures every run uses the same version, avoiding "works on my machine" issues |
+| 3. Install dependencies | `npm ci` (not `npm install`) | `npm ci` installs the exact versions in `package-lock.json` → **reproducible build** |
+| 4. Lint | `npm run lint` | Catch syntax / style errors early, before merging |
+| 5. Test | `npm test` | Make sure the code doesn't break existing functionality |
+| 6. Build | `npm run build` | Produce the actual build that will be deployed (the `dist/` directory) |
+| 7. Upload artifact | Save `dist/` | So the `deploy` job reuses the **exact** built & tested output, without building twice |
 
-➡️ Nếu **bất kỳ bước nào fail**, các bước sau không chạy, job coi như thất bại,
-và job `deploy` cũng sẽ **không chạy**. Đây chính là ý nghĩa của CI: chặn code
-lỗi trước khi nó đi xa hơn.
+➡️ If **any step fails**, the following steps do not run, the job is considered failed,
+and the `deploy` job will **not run** either. This is the whole point of CI: block
+broken code before it goes any further.
 
-### Job `deploy` — CHỈ chạy khi:
-- Job `ci` đã pass (`needs: ci`)
-- Là push (không phải PR) vào nhánh `main` (`if: github.ref == 'refs/heads/main' ...`)
+### Job `deploy` — runs ONLY when:
+- The `ci` job passed (`needs: ci`)
+- It is a push (not a PR) to the `main` branch (`if: github.ref == 'refs/heads/main' ...`)
 
-Việc tách điều kiện này ra giúp: PR chỉ chạy kiểm tra (CI), còn deploy (CD)
-chỉ xảy ra khi code đã được merge vào `main` — tránh deploy nhầm code chưa
-review.
+Separating this condition means: PRs only run checks (CI), while deploy (CD)
+only happens once code is merged into `main` — avoiding accidental deploys of
+unreviewed code.
 
-Job này tải lại artifact đã build, rồi deploy lên **GitHub Pages**.
+This job downloads the built artifact, then deploys it to **cPanel over FTP**.
 
-## 4. Cách bật để pipeline này chạy thật
+## 4. How to enable this pipeline for real
 
-1. Push project này lên 1 GitHub repo.
-2. Vào **Settings → Pages → Build and deployment → Source**, chọn
-   **GitHub Actions**.
-3. Push code lên `main` → vào tab **Actions** để xem pipeline chạy trực tiếp,
-   từng bước một.
-4. Sau khi job `deploy` xong, link app sẽ hiện ở output của bước
-   "Deploy to GitHub Pages" (hoặc Settings → Pages).
+1. Push this project to a GitHub repo.
+2. Add the following secrets under **Settings → Secrets and variables → Actions**:
+   - `FTP_SERVER` — the FTP host (e.g. `ftp.yourdomain.com` or an IP)
+   - `FTP_USERNAME` — the FTP account
+   - `FTP_PASSWORD` — the FTP password
+   - `FTP_SERVER_DIR` — the target directory on the host (e.g. `/public_html/`, with a trailing `/`)
+3. Push code to `main` → open the **Actions** tab to watch the pipeline run live,
+   step by step.
+4. Once the `deploy` job finishes, the app will be published to the configured FTP directory.
 
-## 5. Bài tập gợi ý cho thực tập sinh
+## 5. Suggested exercises for interns
 
-- [ ] Thử sửa 1 dòng code làm lint fail → xem pipeline chặn ở bước nào.
-- [ ] Thử sửa `utils.js` làm sai logic → xem test fail như thế nào.
-- [ ] Thêm 1 hàm mới vào `utils.js` + viết test tương ứng.
-- [ ] Thử tạo Pull Request thay vì push thẳng vào `main` → quan sát:
-      job `ci` chạy nhưng job `deploy` **không** chạy.
-- [ ] Thêm 1 bước mới vào workflow, ví dụ: kiểm tra format bằng Prettier.
-- [ ] (Nâng cao) Thêm badge trạng thái CI vào đầu README này.
+- [ ] Change one line of code to make lint fail → see where the pipeline blocks.
+- [ ] Change `utils.js` to break the logic → see how the test fails.
+- [ ] Add a new function to `utils.js` and write a matching test.
+- [ ] Create a Pull Request instead of pushing straight to `main` → observe:
+      the `ci` job runs but the `deploy` job does **not**.
+- [ ] Add a new step to the workflow, e.g. checking formatting with Prettier.
+- [ ] (Advanced) Add a CI status badge to the top of this README.
 
-## 6. Áp dụng vào project thực tế
+## 6. Applying this to real projects
 
-Khi thực tập sinh làm project riêng, nguyên tắc tương tự:
+When interns build their own projects, the principles are the same:
 
 ```
-checkout -> install -> lint -> test -> build -> (nếu ở main) -> deploy
+checkout -> install -> lint -> test -> build -> (if on main) -> deploy
 ```
 
-Chỉ khác công cụ cụ thể (React thay vì vanilla JS, deploy lên server/Docker
-thay vì GitHub Pages...), nhưng **thứ tự và lý do từng bước là giống nhau**.
+Only the specific tools differ (React instead of vanilla JS, deploying to a
+server/Docker instead of cPanel...), but **the order and the reason for each step
+are the same**.

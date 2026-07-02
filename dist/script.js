@@ -1,7 +1,7 @@
 /**
  * script.js
- * Xử lý tương tác DOM + lưu trữ localStorage.
- * Dùng các hàm thuần từ utils.js để dễ tách test.
+ * Handles DOM interactions + localStorage persistence.
+ * Uses the pure functions from utils.js to keep logic easy to test.
  */
 
 const STORAGE_KEY = "cicd-demo-tasks";
@@ -20,7 +20,7 @@ function loadTasks() {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch (e) {
-    console.error("Không thể đọc localStorage:", e);
+    console.error("Unable to read localStorage:", e);
     return [];
   }
 }
@@ -37,7 +37,7 @@ function render() {
     li.innerHTML = `
       <input type="checkbox" ${task.done ? "checked" : ""} data-id="${task.id}" class="task-item__checkbox" />
       <span class="task-item__text">${escapeHtml(task.text)}</span>
-      <button class="task-item__delete" data-id="${task.id}">Xoá</button>
+      <button class="task-item__delete" data-id="${task.id}">Delete</button>
     `;
     list.appendChild(li);
   });

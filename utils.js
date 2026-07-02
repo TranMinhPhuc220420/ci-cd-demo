@@ -1,18 +1,18 @@
 /**
  * utils.js
- * Chứa các hàm thuần (pure functions) — không phụ thuộc DOM.
- * Tách riêng ra để dễ viết unit test (utils.test.js).
+ * Contains pure functions — not dependent on the DOM.
+ * Separated out to make unit testing easy (utils.test.js).
  */
 
 /**
- * Tạo 1 task mới từ nội dung nhập vào.
+ * Create a new task from the given input text.
  * @param {string} text
  * @returns {{id: string, text: string, done: boolean}}
  */
 function createTask(text) {
   const trimmed = (text || "").trim();
   if (!trimmed) {
-    throw new Error("Task text không được để trống");
+    throw new Error("Task text must not be empty");
   }
   return {
     id: Date.now().toString() + Math.random().toString(16).slice(2),
@@ -22,7 +22,7 @@ function createTask(text) {
 }
 
 /**
- * Tính thống kê từ danh sách task.
+ * Compute statistics from a list of tasks.
  * @param {Array<{done: boolean}>} tasks
  * @returns {{total: number, done: number, pending: number}}
  */
@@ -37,7 +37,7 @@ function calculateStats(tasks) {
 }
 
 /**
- * Toggle trạng thái done của 1 task theo id.
+ * Toggle the done state of a task by id.
  * @param {Array} tasks
  * @param {string} id
  * @returns {Array}
@@ -47,7 +47,7 @@ function toggleTask(tasks, id) {
 }
 
 /**
- * Xoá 1 task theo id.
+ * Remove a task by id.
  * @param {Array} tasks
  * @param {string} id
  * @returns {Array}
@@ -56,7 +56,7 @@ function removeTask(tasks, id) {
   return tasks.filter((t) => t.id !== id);
 }
 
-// Hỗ trợ dùng chung cho cả trình duyệt (script.js) và Node (Jest)
+// Support sharing between the browser (script.js) and Node (Jest)
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { createTask, calculateStats, toggleTask, removeTask };
 }

@@ -1,25 +1,25 @@
 name: CI/CD Pipeline
 
-# Kích hoạt pipeline khi:
-# - push lên nhánh main
+# Trigger the pipeline when:
+# - pushing to the main branch
 on:
   push:
     branches: ["main"]
 
-# Chỉ cần quyền đọc source code
+# Only read access to the source code is required
 permissions:
   contents: read
 
-# Nếu có nhiều lần push liên tiếp, huỷ lần chạy cũ để tiết kiệm tài nguyên
+# If several pushes happen in a row, cancel the older run to save resources
 concurrency:
   group: "ci-cd-${{ github.ref }}"
   cancel-in-progress: true
 
 jobs:
   # ---------------------------------------------------------------------------
-  # JOB 1: CI — chạy với push lên nhánh main
+  # JOB 1: CI — runs on every push to the main branch
   # checkout -> setup node -> install -> lint -> test -> build -> upload artifact
-  # Nếu bất kỳ bước nào fail, các bước sau dừng lại và job deploy sẽ không chạy.
+  # If any step fails, the following steps stop and the deploy job will not run.
   # ---------------------------------------------------------------------------
   ci:
     name: Lint - Test - Build
@@ -56,9 +56,9 @@ jobs:
           retention-days: 1
 
   # ---------------------------------------------------------------------------
-  # JOB 2: Deploy — CHỈ chạy khi CI pass VÀ là push vào nhánh main
-  # (Pull Request sẽ không deploy, tránh publish code chưa được merge)
-  # Deploy thư mục dist/ lên cPanel qua FTP.
+  # JOB 2: Deploy — runs ONLY when CI passes AND it is a push to main
+  # (Pull Requests will not deploy, to avoid publishing unmerged code)
+  # Deploys the dist/ directory to cPanel over FTP.
   # ---------------------------------------------------------------------------
   deploy:
     name: Deploy to cPanel via FTP
@@ -72,18 +72,18 @@ jobs:
           name: dist
           path: dist
 
-      - name: 2. Kiểm tra FTP secrets
+      - name: 2. Check FTP secrets
         run: |
           missing=0
           for key in FTP_SERVER FTP_USERNAME FTP_PASSWORD FTP_SERVER_DIR; do
             if [ -z "${!key}" ]; then
-              echo "::error::Secret chưa được cấu hình: $key"
+              echo "::error::Secret is not configured: $key"
               missing=1
             fi
           done
           if [ "$missing" -eq 1 ]; then
             echo ""
-            echo "Vào Settings → Secrets and variables → Actions để thêm các secret trên."
+            echo "Go to Settings -> Secrets and variables -> Actions to add the secrets above."
             exit 1
           fi
         env:
