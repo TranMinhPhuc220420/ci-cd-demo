@@ -79,7 +79,7 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           # Thư mục nguồn (đã build) trên runner — nhớ dấu "/" ở cuối
-          local-dir: ./dist/
+          local-dir: /
           # Thư mục đích trên hosting cPanel, ví dụ: /public_html/ hoặc /public_html/ten-app/
           server-dir: ${{ secrets.FTP_SERVER_DIR }}
           # protocol: ftps  # bỏ comment nếu host yêu cầu FTPS (khuyến nghị nếu hỗ trợ)
