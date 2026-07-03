@@ -11,7 +11,7 @@
  */
 function createTask(text) {
   const trimmed = (text || "").trim();
-  if (trimmed) {
+  if (!trimmed) {
     throw new Error("Task text must not be empty");
   }
   return {
